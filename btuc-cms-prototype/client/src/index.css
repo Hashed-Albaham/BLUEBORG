@@ -52,8 +52,10 @@ img { display: block; max-width: 100%; }
 .header-inner { width: min(1280px, calc(100% - 64px)); height: 52px; margin-inline: auto; display: flex; align-items: center; justify-content: space-between; gap: 32px; }
 .brand-mark { display: inline-flex; align-items: center; gap: 11px; flex: none; }
 .brand-symbol { width: 39px; height: 39px; color: #0d3151; flex: none; }
+.brand-symbol-image { object-fit: contain; background: #fff; border-radius: 50%; box-shadow: 0 0 0 2px rgb(26 188 200 / .32); }
 .brand-name { display: grid; line-height: 1.04; letter-spacing: -.04em; }
 .brand-name strong { font-family: "Noto Kufi Arabic", sans-serif; font-size: 13px; font-weight: 700; }.brand-name small { padding-inline-start: 2px; font-size: 9px; letter-spacing: .15em; opacity: .78; }
+.brand-mark:has(.brand-symbol-image) { gap: 9px; }.brand-mark:has(.brand-symbol-image) .brand-name strong { font-size: 12px; }.brand-mark:has(.brand-symbol-image) .brand-name small { color: #09aebe; font-size: 7px; }
 .desktop-nav { display: flex; align-items: center; gap: 31px; margin-inline-start: auto; margin-inline-end: 20px; font-size: 14px; font-weight: 500; }
 .desktop-nav a { opacity: .8; transition: opacity 160ms ease, color 160ms ease; }.desktop-nav a:hover { opacity: 1; color: #b87936; }
 .header-cta, .button-primary { display: inline-flex; align-items: center; justify-content: center; gap: 11px; border: 1px solid transparent; background: #b87936; color: white; font-size: 13px; font-weight: 700; transition: transform 160ms var(--ease-out), background 160ms ease, box-shadow 160ms ease; }.header-cta { min-height: 41px; padding: 0 17px; }.header-cta:hover, .button-primary:hover { background: #d0924d; transform: translateY(-2px); box-shadow: 0 10px 22px rgb(10 26 41 / .18); }.header-cta:active, .button-primary:active { transform: scale(.97); }

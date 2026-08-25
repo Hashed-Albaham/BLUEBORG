@@ -3,6 +3,7 @@
  * تستخدم المسارات الدقيقة والكتل التحريرية لإبراز الثقة والترابط التشغيلي.
  */
 import { useEffect, useState } from "react";
+import { brandAssets } from "@/lib/brandAssets";
 import {
   ArrowLeft,
   ArrowUpLeft,
@@ -100,18 +101,20 @@ const stages = [
   ["04", "تسليم واستمرارية", "نُهيئ النتيجة للتشغيل والصيانة عند الحاجة."],
 ] as const;
 
+const projectImageByRoute: Record<string, string> = {
+  energyConnectivity: brandAssets.telecomTower,
+  digitalSolutions: brandAssets.networkOperations,
+  sitePreparation: brandAssets.fieldCabinet,
+};
+
 function BrandMark({ compact = false }: { compact?: boolean }) {
   return (
     <a className="brand-mark" href="#top" aria-label="شركة البرج الأزرق المتحدة">
-      <svg className="brand-symbol" viewBox="0 0 48 48" role="img" aria-label="رمز البرج الأزرق المتحدة">
-        <path d="M9 39.5V8.5h11.5v21.3l6-7.1 5.6 6.1V8.5H39v31" fill="none" stroke="currentColor" strokeWidth="3" strokeLinejoin="miter" />
-        <path d="M6.5 39.5h35M15.4 14.2h.1M34 14.2h.1M26.3 22.6v16.9" fill="none" stroke="#B87936" strokeWidth="2.2" strokeLinecap="square" />
-      </svg>
-      <span className="brand-connector" aria-hidden="true" />
+      <img className="brand-symbol brand-symbol-image" src={brandAssets.logoMark} alt="شعار البرج الأزرق المتحدة" />
       {!compact && (
         <span className="brand-name">
-          <strong>البرج الأزرق</strong>
-          <small>المتحدة للبنية التحتية والإنشاءات</small>
+          <strong>البرج الأزرق المتحدة</strong>
+          <small>Blue Tower United Company Ltd</small>
         </span>
       )}
     </a>
@@ -196,7 +199,7 @@ export default function Home() {
           </div>
         </div>
         <div className="hero-visual" aria-hidden="true">
-          {images && <img src={images.hero} alt="" decoding="async" />}
+          <img src={brandAssets.fieldCabinet} alt="" decoding="async" />
           <div className="hero-schematic">
             <span className="schematic-arc arc-one" />
             <span className="schematic-arc arc-two" />
@@ -259,7 +262,7 @@ export default function Home() {
             const Icon = service.icon;
             return (
               <article className="service-card" key={service.number} role="listitem">
-                <div className="service-image-wrap">{images ? <img src={images[service.imageKey]} alt="" loading="lazy" decoding="async" /> : <div className="service-image-placeholder" />}<div className="image-wash" /><span className="service-number"><small>مسار</small>{service.number}</span></div>
+                <div className="service-image-wrap">{(projectImageByRoute[service.imageKey] ?? images?.[service.imageKey]) ? <img src={projectImageByRoute[service.imageKey] ?? images?.[service.imageKey]} alt="" loading="lazy" decoding="async" /> : <div className="service-image-placeholder" />}<div className="image-wash" /><span className="service-number"><small>مسار</small>{service.number}</span></div>
                 <div className="service-body">
                   <div className="service-icon"><Icon size={21} strokeWidth={1.8} /></div>
                   <div className="service-route-meta"><span>نطاق تنفيذ مترابط</span><i /></div>

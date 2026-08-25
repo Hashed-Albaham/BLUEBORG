@@ -29,6 +29,7 @@ export const initialCmsData: CmsData = {
       { id: "b-hero", type: "hero", title: "نصنع البنية التي تمضي بها المدن", description: "منظومة تنفيذ مترابطة تجمع الإنشاءات والمرافق والطاقة والاتصالات.", enabled: true },
       { id: "b-services", type: "serviceGrid", title: "مسارات العمل", description: "خدمات مترابطة تبدأ من الموقع وتنتهي بجهوزية التشغيل.", enabled: true },
       { id: "b-process", type: "process", title: "منهجية تنفيذ واضحة", description: "تخطيط، تجهيز، تنفيذ، وتسليم ضمن رؤية تشغيلية واحدة.", enabled: true },
+      { id: "b-projects", type: "projectGrid", title: "نماذج من أعمالنا", description: "معرض افتراضي يعرض نطاقات من أعمال الاتصالات والمرافق وتكامل الشبكات.", enabled: true },
       { id: "b-contact", type: "contactPanel", title: "لنتحدث عن مشروعك", description: "تواصل مع فريق البرج الأزرق المتحدة لبدء نطاق العمل.", enabled: true },
     ] },
     { id: "services", title: "مجالات العمل", slug: "/services", status: "منشورة", updatedAt: "اليوم", blocks: [
@@ -43,8 +44,8 @@ export const initialCmsData: CmsData = {
   ], templates,
 };
 
-const storageKey = "btuc-cms-studio-v2";
-const historyKey = "btuc-cms-studio-history-v2";
+const storageKey = "btuc-cms-studio-v3";
+const historyKey = "btuc-cms-studio-history-v3";
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
 export function loadCmsData(): CmsData {

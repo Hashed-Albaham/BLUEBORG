@@ -21,6 +21,10 @@ pnpm build
 pnpm start
 ```
 
+## النشر من دون نطاق مخصص
+
+لا يلزم شراء نطاق لتجربة الموقع. بعد تفعيل GitHub Pages على خيار **GitHub Actions** في إعدادات المستودع، ينشئ سير العمل الرابط المجاني `https://hashed-albaham.github.io/BLUEBORG/`. ستجد واجهة الموقع في `/btuc-cms-prototype/`، وتكون لوحة الإدارة في `/btuc-cms-prototype/admin` ومعاينة العميل في `/btuc-cms-prototype/preview/home`.
+
 ## الربط مع PHP/MySQL
 
 مجلد `php-api` يحتوي على مخطط MySQL وخدمة PHP مرجعية. على استضافة PHP 8.2+ وMySQL 8.0+/MariaDB 10.6+، انسخ `php-api/config.example.php` إلى `php-api/config.php` ثم حدّث بيانات الاتصال وعنوان لوحة الإدارة المسموح به. بعدها أضف عنوان الخدمة في ملف `.env`:
