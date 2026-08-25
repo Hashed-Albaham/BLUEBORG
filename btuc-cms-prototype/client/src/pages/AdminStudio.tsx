@@ -1,47 +1,15 @@
-/**
- * تصميم لوحة الإدارة: «المحرر التنفيذي» — مساحة هادئة ذات تسلسل عمل واضح.
- * تُدار الصفحات والوحدات كطبقات محتوى قابلة للإضافة والترتيب والتعديل.
- */
 import { useEffect, useMemo, useState } from "react";
 import "../admin.css";
-import {
-  ArrowDown,
-  ArrowUp,
-  Blocks,
-  BookOpen,
-  CheckCircle2,
-  ChevronLeft,
-  ClipboardList,
-  FilePlus2,
-  FileText,
-  LayoutTemplate,
-  Menu,
-  MoreHorizontal,
-  Newspaper,
-  PanelRightClose,
-  Plus,
-  Save,
-  Settings2,
-  SlidersHorizontal,
-  Sparkles,
-  Trash2,
-  X,
-} from "lucide-react";
-import { blockLabels, createBlock, loadCmsData, saveCmsData, type BlockType, type CmsData, type CmsPage } from "@/lib/cmsStore";
+import { ArchiveRestore, ArrowDown, ArrowUp, Blocks, CheckCircle2, ChevronLeft, ClipboardList, Copy, Eye, FilePlus2, FileText, History, LayoutTemplate, Menu, MoreHorizontal, Newspaper, PanelRightClose, Plus, RotateCcw, Save, Settings2, SlidersHorizontal, Sparkles, Trash2, X } from "lucide-react";
+import { blockLabels, createBlock, initialCmsData, loadCmsData, loadCmsHistory, restoreCmsSnapshot, saveCmsData, type BlockType, type CmsData, type CmsPage, type PageStatus } from "@/lib/cmsStore";
 
-type AdminView = "overview" | "pages" | "posts" | "templates" | "settings";
-
+type AdminView = "overview" | "pages" | "posts" | "templates" | "history" | "settings";
 const navItems: Array<{ id: AdminView; label: string; icon: typeof ClipboardList }> = [
-  { id: "overview", label: "نظرة عامة", icon: ClipboardList },
-  { id: "pages", label: "الصفحات", icon: FileText },
-  { id: "posts", label: "المنشورات", icon: Newspaper },
-  { id: "templates", label: "مكتبة القوالب", icon: LayoutTemplate },
-  { id: "settings", label: "التكامل والإعدادات", icon: Settings2 },
+  { id: "overview", label: "نظرة عامة", icon: ClipboardList }, { id: "pages", label: "الصفحات", icon: FileText }, { id: "posts", label: "المنشورات", icon: Newspaper }, { id: "templates", label: "مكتبة القوالب", icon: LayoutTemplate }, { id: "history", label: "سجل التغييرات", icon: History }, { id: "settings", label: "التكامل والإعدادات", icon: Settings2 },
 ];
-
-function updateSelectedPage(data: CmsData, pageId: string, updater: (page: CmsPage) => CmsPage) {
-  return { ...data, pages: data.pages.map((page) => (page.id === pageId ? updater(page) : page)) };
-}
+const stamp = () => new Date().toLocaleString("ar-SA");
+const updatePage = (data: CmsData, id: string, update: (page: CmsPage) => CmsPage) => ({ ...data, pages: data.pages.map((page) => page.id === id ? update(page) : page) });
+const pageStatusClass = (status: PageStatus) => status === "منشورة" ? "status-published" : status === "معطلة" ? "status-disabled" : status === "محذوفة" ? "status-deleted" : "status-draft";
 
 export default function AdminStudio() {
   const [data, setData] = useState<CmsData>(() => loadCmsData());
@@ -49,85 +17,35 @@ export default function AdminStudio() {
   const [selectedPageId, setSelectedPageId] = useState("home");
   const [blockType, setBlockType] = useState<BlockType>("richText");
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [notice, setNotice] = useState("تم تحميل مساحة العمل المحلية.");
-
-  const selectedPage = useMemo(() => data.pages.find((page) => page.id === selectedPageId) ?? data.pages[0], [data.pages, selectedPageId]);
-
+  const [showDeleted, setShowDeleted] = useState(false);
+  const [notice, setNotice] = useState("مساحة المحتوى جاهزة للتعديل.");
+  const selectedPage = useMemo(() => data.pages.find((page) => page.id === selectedPageId) ?? data.pages.find((page) => page.status !== "محذوفة") ?? data.pages[0], [data.pages, selectedPageId]);
+  const activePages = data.pages.filter((page) => showDeleted || page.status !== "محذوفة");
+  const history = loadCmsHistory();
   useEffect(() => { saveCmsData(data); }, [data]);
+  const commit = (next: CmsData, message: string) => { setData(next); setNotice(message); };
+  const choose = (next: AdminView) => { setView(next); setSidebarOpen(false); };
 
-  const persist = (next: CmsData, message: string) => {
-    setData(next);
-    setNotice(message);
-  };
+  const addPage = () => { const id = `page-${Date.now()}`; commit({ ...data, pages: [...data.pages, { id, title: "صفحة جديدة", slug: "/new-page", status: "مسودة", updatedAt: stamp(), blocks: [createBlock("hero"), createBlock("richText")] }] }, "أُنشئت صفحة جديدة مع وحدتين مبدئيتين."); setSelectedPageId(id); choose("pages"); };
+  const setPageStatus = (status: PageStatus) => commit(updatePage(data, selectedPage.id, (page) => ({ ...page, status, updatedAt: stamp() })), status === "منشورة" ? "نُشرت الصفحة وأصبحت ظاهرة في معاينة العميل." : status === "معطلة" ? "عُطلت الصفحة؛ لن تظهر للزوار." : status === "محذوفة" ? "نُقلت الصفحة إلى سلة المحذوفات ويمكن استعادتها." : "حُفظت الصفحة كمسودة.");
+  const addBlock = () => commit(updatePage(data, selectedPage.id, (page) => ({ ...page, blocks: [...page.blocks, createBlock(blockType)], updatedAt: stamp() })), `أُضيف قالب «${blockLabels[blockType]}» إلى الصفحة.`);
+  const updateBlock = (id: string, field: "title" | "description" | "enabled", value: string | boolean) => setData(updatePage(data, selectedPage.id, (page) => ({ ...page, blocks: page.blocks.map((block) => block.id === id ? { ...block, [field]: value } : block), updatedAt: stamp() })));
+  const duplicateBlock = (id: string) => commit(updatePage(data, selectedPage.id, (page) => { const original = page.blocks.find((block) => block.id === id); return original ? { ...page, blocks: [...page.blocks, { ...original, id: `block-${Date.now()}`, title: `${original.title} — نسخة` }], updatedAt: stamp() } : page; }), "تم نسخ الوحدة وإضافتها في نهاية الصفحة.");
+  const deleteBlock = (id: string) => commit(updatePage(data, selectedPage.id, (page) => ({ ...page, blocks: page.blocks.filter((block) => block.id !== id), updatedAt: stamp() })), "حُذفت الوحدة من الصفحة.");
+  const moveBlock = (index: number, direction: -1 | 1) => commit(updatePage(data, selectedPage.id, (page) => { const target = index + direction; if (target < 0 || target >= page.blocks.length) return page; const blocks = [...page.blocks]; [blocks[index], blocks[target]] = [blocks[target], blocks[index]]; return { ...page, blocks, updatedAt: stamp() }; }), "تم حفظ ترتيب الوحدات الجديد.");
+  const pageField = (field: "title" | "slug", value: string) => setData(updatePage(data, selectedPage.id, (page) => ({ ...page, [field]: value, updatedAt: stamp() })));
+  const addPost = () => { commit({ ...data, posts: [{ id: `post-${Date.now()}`, title: "منشور جديد", excerpt: "اكتب ملخصًا موجزًا للمنشور.", status: "مسودة", updatedAt: stamp() }, ...data.posts] }, "أُنشئ منشور جديد كمسودة."); choose("posts"); };
+  const changePost = (id: string, status: PageStatus) => commit({ ...data, posts: data.posts.map((post) => post.id === id ? { ...post, status, updatedAt: stamp() } : post) }, status === "محذوفة" ? "نُقل المنشور إلى سلة المحذوفات." : "تم تحديث حالة المنشور.");
+  const addTemplate = () => { const type = blockType; const name = `قالب ${blockLabels[type]} مخصص`; commit({ ...data, templates: [...data.templates, { id: `tpl-${Date.now()}`, name, type, description: "قالب مخصص يمكن إضافته إلى أي صفحة من منشئ المحتوى.", fields: ["العنوان", "الوصف", "الإعدادات"] }] }, `أُضيف ${name} إلى مكتبة القوالب.`); };
+  const restore = (id: string) => { const snapshot = restoreCmsSnapshot(id); if (snapshot) { setData(snapshot); setNotice("تمت استعادة نسخة محتوى محفوظة."); } };
+  const resetWorkspace = () => { setData(initialCmsData); setNotice("أعيدت مساحة المحتوى إلى النموذج المؤسسي الافتراضي."); };
 
-  const addPage = () => {
-    const id = `page-${Date.now()}`;
-    const page: CmsPage = { id, title: "صفحة جديدة", slug: "/new-page", status: "مسودة", updatedAt: "الآن", blocks: [] };
-    persist({ ...data, pages: [...data.pages, page] }, "أُنشئت صفحة جديدة كمسودة.");
-    setSelectedPageId(id);
-    setView("pages");
-  };
-
-  const addBlock = () => {
-    const next = updateSelectedPage(data, selectedPage.id, (page) => ({ ...page, blocks: [...page.blocks, createBlock(blockType)], updatedAt: "الآن" }));
-    persist(next, `أُضيف قالب «${blockLabels[blockType]}» إلى الصفحة.`);
-  };
-
-  const moveBlock = (index: number, direction: -1 | 1) => {
-    const next = updateSelectedPage(data, selectedPage.id, (page) => {
-      const target = index + direction;
-      if (target < 0 || target >= page.blocks.length) return page;
-      const blocks = [...page.blocks];
-      [blocks[index], blocks[target]] = [blocks[target], blocks[index]];
-      return { ...page, blocks, updatedAt: "الآن" };
-    });
-    persist(next, "تم تحديث ترتيب الوحدات.");
-  };
-
-  const updateBlock = (blockId: string, field: "title" | "description" | "enabled", value: string | boolean) => {
-    const next = updateSelectedPage(data, selectedPage.id, (page) => ({
-      ...page,
-      blocks: page.blocks.map((block) => (block.id === blockId ? { ...block, [field]: value } : block)),
-      updatedAt: "الآن",
-    }));
-    setData(next);
-  };
-
-  const deleteBlock = (blockId: string) => persist(updateSelectedPage(data, selectedPage.id, (page) => ({ ...page, blocks: page.blocks.filter((block) => block.id !== blockId), updatedAt: "الآن" })), "حُذفت الوحدة من الصفحة.");
-
-  const updatePageField = (field: "title" | "slug", value: string) => setData(updateSelectedPage(data, selectedPage.id, (page) => ({ ...page, [field]: value, updatedAt: "الآن" })));
-  const publishPage = () => persist(updateSelectedPage(data, selectedPage.id, (page) => ({ ...page, status: "منشورة", updatedAt: "الآن" })), "نُشرت الصفحة في مساحة المحتوى.");
-
-  const addPost = () => {
-    persist({ ...data, posts: [{ id: `post-${Date.now()}`, title: "منشور جديد", excerpt: "اكتب ملخصًا موجزًا للمنشور.", status: "مسودة", updatedAt: "الآن" }, ...data.posts] }, "أُنشئ منشور جديد كمسودة.");
-    setView("posts");
-  };
-
-  return (
-    <div className="cms-studio" dir="rtl">
-      <aside className={`cms-sidebar ${sidebarOpen ? "is-open" : ""}`}>
-        <div className="cms-brand"><span className="cms-mark"><Blocks size={18} /></span><div><b>BTUC CMS</b><small>مساحة المحتوى</small></div><button type="button" className="cms-mobile-close" onClick={() => setSidebarOpen(false)} aria-label="إغلاق القائمة"><X size={19} /></button></div>
-        <a className="cms-site-link" href="/">عرض الموقع العام <ChevronLeft size={15} /></a>
-        <nav className="cms-nav" aria-label="تنقل لوحة الإدارة">
-          {navItems.map((item) => { const Icon = item.icon; return <button type="button" className={view === item.id ? "is-active" : ""} key={item.id} onClick={() => { setView(item.id); setSidebarOpen(false); }}><Icon size={18} />{item.label}</button>; })}
-        </nav>
-        <div className="cms-sidebar-note"><Sparkles size={16} /><p><b>وضع تجريبي</b>يحفظ التعديل محليًا إلى حين وصل خدمة المحتوى.</p></div>
-      </aside>
-
-      <main className="cms-main">
-        <header className="cms-topbar"><button className="cms-menu" type="button" onClick={() => setSidebarOpen(true)} aria-label="فتح القائمة"><Menu size={21} /></button><div><span className="cms-breadcrumb">لوحة الإدارة / {navItems.find((item) => item.id === view)?.label}</span><h1>{view === "pages" ? selectedPage.title : navItems.find((item) => item.id === view)?.label}</h1></div><div className="cms-top-actions"><span className="cms-sync"><CheckCircle2 size={15} />محفوظ محليًا</span><button className="cms-primary" type="button" onClick={view === "posts" ? addPost : addPage}><Plus size={17} />{view === "posts" ? "منشور جديد" : "صفحة جديدة"}</button></div></header>
-        <div className="cms-notice"><CheckCircle2 size={15} />{notice}</div>
-
-        {view === "overview" && <section className="cms-content cms-overview"><div className="cms-hero-card"><div><span className="cms-eyebrow">BTUC CMS STUDIO</span><h2>أدِر الموقع <em>بوحدات مرنة.</em></h2><p>أضف صفحة أو منشورًا، ثم رتّب القوالب داخلها لتنشئ تجربة محتوى متماسكة من دون إعادة بناء الواجهة كل مرة.</p><button className="cms-inverse" type="button" onClick={() => setView("pages")}>ابدأ من الصفحات <ChevronLeft size={16} /></button></div><div className="cms-hero-stats"><span>الصفحات<b>{data.pages.length}</b></span><span>المنشورات<b>{data.posts.length}</b></span><span>القوالب<b>{data.templates.length}</b></span></div></div><div className="cms-kpi-grid"><article><span>الصفحات المنشورة</span><b>{data.pages.filter((page) => page.status === "منشورة").length}</b><small>قابلة للإدارة عبر الوحدات</small></article><article><span>الوحدات النشطة</span><b>{data.pages.reduce((total, page) => total + page.blocks.filter((block) => block.enabled).length, 0)}</b><small>مرتبة داخل الصفحات</small></article><article><span>مسودات تنتظر المراجعة</span><b>{data.posts.filter((post) => post.status === "مسودة").length}</b><small>منشورات وصفحات</small></article></div><section className="cms-recent"><div className="cms-section-heading"><div><span>المحتوى الأخير</span><h3>تابع ما يحتاج إلى مراجعة</h3></div><button type="button" onClick={() => setView("posts")}>كل المنشورات <ChevronLeft size={15} /></button></div>{data.posts.map((post) => <article key={post.id}><span className="cms-file-icon"><Newspaper size={17} /></span><div><b>{post.title}</b><p>{post.excerpt}</p></div><small className={post.status === "منشورة" ? "status-published" : "status-draft"}>{post.status}</small><time>{post.updatedAt}</time><MoreHorizontal size={19} /></article>)}</section></section>}
-
-        {view === "pages" && <section className="cms-content cms-pages-layout"><div className="cms-page-list"><div className="cms-panel-title"><div><span>الصفحات</span><h3>هيكل الموقع</h3></div><button type="button" onClick={addPage} aria-label="إضافة صفحة"><Plus size={18} /></button></div>{data.pages.map((page) => <button type="button" key={page.id} className={page.id === selectedPage.id ? "is-selected" : ""} onClick={() => setSelectedPageId(page.id)}><FileText size={17} /><span><b>{page.title}</b><small>{page.slug}</small></span><i className={page.status === "منشورة" ? "status-published" : "status-draft"}>{page.status}</i></button>)}</div><div className="cms-page-editor"><div className="cms-editor-heading"><div><span>تحرير الصفحة</span><h2>{selectedPage.title}</h2></div><button className="cms-primary" type="button" onClick={publishPage}><Save size={16} />نشر التحديثات</button></div><div className="cms-page-fields"><label>عنوان الصفحة<input value={selectedPage.title} onChange={(event) => updatePageField("title", event.target.value)} /></label><label>المسار<input dir="ltr" value={selectedPage.slug} onChange={(event) => updatePageField("slug", event.target.value)} /></label></div><div className="cms-builder-title"><div><span>منشئ الصفحة</span><h3>وحدات الصفحة</h3></div><div className="cms-add-block"><select value={blockType} onChange={(event) => setBlockType(event.target.value as BlockType)}>{Object.entries(blockLabels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select><button type="button" onClick={addBlock}><Plus size={15} />إضافة وحدة</button></div></div><div className="cms-blocks">{selectedPage.blocks.length === 0 && <div className="cms-empty"><Blocks size={24} /><b>لا توجد وحدات بعد</b><span>اختر قالبًا ثم أضفه لبدء بناء الصفحة.</span></div>}{selectedPage.blocks.map((block, index) => <article className={`cms-block ${block.enabled ? "" : "is-disabled"}`} key={block.id}><div className="cms-block-handle"><Blocks size={17} /></div><div className="cms-block-main"><div className="cms-block-meta"><span>{blockLabels[block.type]}</span><label className="cms-switch"><input type="checkbox" checked={block.enabled} onChange={(event) => updateBlock(block.id, "enabled", event.target.checked)} /><i /></label></div><input value={block.title} aria-label="عنوان الوحدة" onChange={(event) => updateBlock(block.id, "title", event.target.value)} /><textarea value={block.description} aria-label="وصف الوحدة" onChange={(event) => updateBlock(block.id, "description", event.target.value)} /></div><div className="cms-block-actions"><button type="button" onClick={() => moveBlock(index, -1)} disabled={index === 0} aria-label="نقل للأعلى"><ArrowUp size={16} /></button><button type="button" onClick={() => moveBlock(index, 1)} disabled={index === selectedPage.blocks.length - 1} aria-label="نقل للأسفل"><ArrowDown size={16} /></button><button type="button" onClick={() => deleteBlock(block.id)} aria-label="حذف الوحدة"><Trash2 size={16} /></button></div></article>)}</div></div><aside className="cms-inspector"><div className="cms-panel-title"><div><span>خصائص الصفحة</span><h3>ملخص التنفيذ</h3></div><SlidersHorizontal size={17} /></div><dl><div><dt>الحالة</dt><dd className={selectedPage.status === "منشورة" ? "status-published" : "status-draft"}>{selectedPage.status}</dd></div><div><dt>آخر تحديث</dt><dd>{selectedPage.updatedAt}</dd></div><div><dt>عدد الوحدات</dt><dd>{selectedPage.blocks.length}</dd></div></dl><div className="cms-inspector-note"><BookOpen size={16} /><p>يمكن تغيير ترتيب الوحدات من الأسهم، أو إخفاؤها مؤقتًا دون حذف بياناتها.</p></div></aside></section>}
-
-        {view === "posts" && <section className="cms-content"><div className="cms-section-heading"><div><span>إدارة المنشورات</span><h2>المحتوى التحريري</h2></div><button className="cms-primary" type="button" onClick={addPost}><FilePlus2 size={16} />منشور جديد</button></div><div className="cms-post-table"><div className="cms-table-head"><span>العنوان</span><span>الحالة</span><span>آخر تحديث</span><span /></div>{data.posts.map((post) => <article key={post.id}><div><b>{post.title}</b><p>{post.excerpt}</p></div><i className={post.status === "منشورة" ? "status-published" : "status-draft"}>{post.status}</i><time>{post.updatedAt}</time><button type="button" onClick={() => setNotice("يمكن توسيع محرر المنشور بإضافة حقول الصور وSEO عند ربط قاعدة البيانات.")}><MoreHorizontal size={19} /></button></article>)}</div></section>}
-
-        {view === "templates" && <section className="cms-content"><div className="cms-section-heading"><div><span>وحدات قابلة لإعادة الاستخدام</span><h2>مكتبة القوالب</h2></div><button className="cms-primary" type="button" onClick={() => { setBlockType("richText"); setView("pages"); setNotice("اخترت قالب النص التحريري لإضافته إلى الصفحة."); }}><Plus size={16} />استخدام قالب</button></div><div className="cms-template-grid">{data.templates.map((template) => <article key={template.id}><span className="cms-template-icon"><LayoutTemplate size={19} /></span><h3>{template.name}</h3><p>{template.description}</p><div>{template.fields.map((field) => <small key={field}>{field}</small>)}</div><button type="button" onClick={() => { setBlockType(template.type); setView("pages"); setNotice(`قالب «${template.name}» جاهز للإضافة.`); }}>إضافة إلى صفحة <ChevronLeft size={15} /></button></article>)}</div></section>}
-
-        {view === "settings" && <section className="cms-content cms-settings"><div className="cms-section-heading"><div><span>قابلية الربط</span><h2>تكامل PHP وMySQL</h2></div></div><div className="cms-integration-card"><div><span className="cms-file-icon"><PanelRightClose size={18} /></span><h3>طبقة بيانات قابلة للتبديل</h3><p>النموذج يستخدم التخزين المحلي للتجربة، ويضم عميل REST في <code>client/src/lib/phpClient.ts</code> لتفعيل خدمة PHP عند توفير عنوان الواجهة.</p></div><span className="cms-ready-badge"><CheckCircle2 size={15} />جاهز للربط</span></div><div className="cms-endpoints"><h3>عقد الواجهة المقترح</h3><article><b>GET <code>/health</code></b><span>فحص جاهزية خدمة المحتوى.</span></article><article><b>GET <code>/content</code></b><span>قراءة الصفحات والمنشورات والقوالب.</span></article><article><b>PUT <code>/content</code></b><span>حفظ بنية المحتوى كاملة بشكل آمن.</span></article></div><div className="cms-inspector-note"><Settings2 size={16} /><p>ستجد نموذج API وخطّة قاعدة البيانات في مجلد <code>php-api</code> عند تصدير المشروع. تحتاج الاستضافة النهائية إلى PHP 8.2+ وMySQL 8.0+ أو MariaDB 10.6+.</p></div></section>}
-      </main>
-    </div>
-  );
+  return <div className="cms-studio" dir="rtl"><aside className={`cms-sidebar ${sidebarOpen ? "is-open" : ""}`}><div className="cms-brand"><span className="cms-mark"><Blocks size={18} /></span><div><b>BTUC CMS</b><small>مساحة المحتوى</small></div><button className="cms-mobile-close" type="button" onClick={() => setSidebarOpen(false)} aria-label="إغلاق القائمة"><X size={19} /></button></div><a className="cms-site-link" href="/preview/home">معاينة موقع العميل <ChevronLeft size={15} /></a><nav className="cms-nav" aria-label="تنقل لوحة الإدارة">{navItems.map((item) => { const Icon = item.icon; return <button type="button" className={view === item.id ? "is-active" : ""} key={item.id} onClick={() => choose(item.id)}><Icon size={18} />{item.label}</button>; })}</nav><div className="cms-sidebar-note"><Sparkles size={16} /><p><b>وضع إدارة كامل</b>المحتوى يحفظ محليًا ثم ينتقل لاحقًا إلى خدمة PHP/MySQL.</p></div></aside><main className="cms-main"><header className="cms-topbar"><button className="cms-menu" type="button" onClick={() => setSidebarOpen(true)} aria-label="فتح القائمة"><Menu size={21} /></button><div><span className="cms-breadcrumb">لوحة الإدارة / {navItems.find((item) => item.id === view)?.label}</span><h1>{view === "pages" ? selectedPage.title : navItems.find((item) => item.id === view)?.label}</h1></div><div className="cms-top-actions"><span className="cms-sync"><CheckCircle2 size={15} />حفظ تلقائي</span><button className="cms-primary" type="button" onClick={view === "posts" ? addPost : addPage}><Plus size={17} />{view === "posts" ? "منشور جديد" : "صفحة جديدة"}</button></div></header><div className="cms-notice"><CheckCircle2 size={15} />{notice}</div>
+    {view === "overview" && <section className="cms-content cms-overview"><div className="cms-hero-card"><div><span className="cms-eyebrow">BTUC CMS STUDIO</span><h2>أدِر الموقع <em>بوحدات مرنة.</em></h2><p>كل صفحة عبارة عن قوالب مرتبة يمكنك إضافتها ونسخها وتعطيلها وحذفها، ثم معاينة أثرها في واجهة العميل قبل النشر.</p><button className="cms-inverse" type="button" onClick={() => choose("pages")}>ابدأ من الصفحات <ChevronLeft size={16} /></button></div><div className="cms-hero-stats"><span>الصفحات<b>{data.pages.filter((item) => item.status !== "محذوفة").length}</b></span><span>المنشورات<b>{data.posts.filter((item) => item.status !== "محذوفة").length}</b></span><span>القوالب<b>{data.templates.length}</b></span></div></div><div className="cms-kpi-grid"><article><span>الصفحات المنشورة</span><b>{data.pages.filter((page) => page.status === "منشورة").length}</b><small>مرئية في موقع العميل</small></article><article><span>الوحدات النشطة</span><b>{data.pages.reduce((total, page) => total + page.blocks.filter((block) => block.enabled).length, 0)}</b><small>يمكن تعطيلها دون حذفها</small></article><article><span>النسخ المحفوظة</span><b>{history.length}</b><small>متاحة للاستعادة</small></article></div><section className="cms-recent"><div className="cms-section-heading"><div><span>اختصار الإدارة</span><h3>تدفقات جاهزة للاستخدام</h3></div><button type="button" onClick={() => choose("history")}>سجل التغييرات <ChevronLeft size={15} /></button></div><article><span className="cms-file-icon"><Eye size={17} /></span><div><b>معاينة العميل</b><p>اعرض الصفحة المنشورة كما ستظهر للزائر قبل تعديل الموقع العام.</p></div><a className="cms-inline-action" href="/preview/home">فتح المعاينة</a></article><article><span className="cms-file-icon"><LayoutTemplate size={17} /></span><div><b>مكتبة القوالب</b><p>أضف قوالب خدمات ومشاريع وأسئلة شائعة ومراحل تنفيذ.</p></div><button type="button" className="cms-inline-action" onClick={() => choose("templates")}>عرض القوالب</button></article></section></section>}
+    {view === "pages" && <section className="cms-content cms-pages-layout"><div className="cms-page-list"><div className="cms-panel-title"><div><span>الصفحات</span><h3>هيكل الموقع</h3></div><button type="button" onClick={addPage} aria-label="إضافة صفحة"><Plus size={18} /></button></div><label className="cms-trash-filter"><input type="checkbox" checked={showDeleted} onChange={(e) => setShowDeleted(e.target.checked)} /> إظهار سلة المحذوفات</label>{activePages.map((page) => <button type="button" key={page.id} className={page.id === selectedPage.id ? "is-selected" : ""} onClick={() => setSelectedPageId(page.id)}><FileText size={17} /><span><b>{page.title}</b><small>{page.slug}</small></span><i className={pageStatusClass(page.status)}>{page.status}</i></button>)}</div><div className="cms-page-editor"><div className="cms-editor-heading"><div><span>تحرير الصفحة</span><h2>{selectedPage.title}</h2></div><div className="cms-editor-actions"><a className="cms-ghost" href={`/preview/${selectedPage.slug === "/" ? "home" : selectedPage.slug.slice(1)}`} target="_blank"><Eye size={15} />معاينة</a><button className="cms-primary" type="button" onClick={() => setPageStatus("منشورة")}><Save size={16} />نشر</button></div></div><div className="cms-page-fields"><label>عنوان الصفحة<input value={selectedPage.title} onChange={(e) => pageField("title", e.target.value)} /></label><label>المسار<input dir="ltr" value={selectedPage.slug} onChange={(e) => pageField("slug", e.target.value)} /></label></div><div className="cms-status-row"><button type="button" onClick={() => setPageStatus("مسودة")}>مسودة</button><button type="button" onClick={() => setPageStatus("معطلة")}>تعطيل</button><button type="button" onClick={() => setPageStatus("محذوفة")}>حذف</button>{selectedPage.status === "محذوفة" && <button type="button" onClick={() => setPageStatus("مسودة")}><ArchiveRestore size={14} />استعادة</button>}</div><div className="cms-builder-title"><div><span>منشئ الصفحة</span><h3>وحدات الصفحة</h3></div><div className="cms-add-block"><select value={blockType} onChange={(e) => setBlockType(e.target.value as BlockType)}>{Object.entries(blockLabels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select><button type="button" onClick={addBlock}><Plus size={15} />إضافة وحدة</button></div></div><div className="cms-blocks">{selectedPage.blocks.length === 0 && <div className="cms-empty"><Blocks size={24} /><b>لا توجد وحدات بعد</b><span>اختر قالبًا ثم أضفه لبدء بناء الصفحة.</span></div>}{selectedPage.blocks.map((block, index) => <article className={`cms-block ${block.enabled ? "" : "is-disabled"}`} key={block.id}><div className="cms-block-handle"><Blocks size={17} /></div><div className="cms-block-main"><div className="cms-block-meta"><span>{blockLabels[block.type]}</span><label className="cms-switch"><input type="checkbox" checked={block.enabled} onChange={(e) => updateBlock(block.id, "enabled", e.target.checked)} /><i /></label></div><input value={block.title} aria-label="عنوان الوحدة" onChange={(e) => updateBlock(block.id, "title", e.target.value)} /><textarea value={block.description} aria-label="وصف الوحدة" onChange={(e) => updateBlock(block.id, "description", e.target.value)} /></div><div className="cms-block-actions"><button type="button" onClick={() => moveBlock(index, -1)} disabled={index === 0} aria-label="نقل للأعلى"><ArrowUp size={16} /></button><button type="button" onClick={() => moveBlock(index, 1)} disabled={index === selectedPage.blocks.length - 1} aria-label="نقل للأسفل"><ArrowDown size={16} /></button><button type="button" onClick={() => duplicateBlock(block.id)} aria-label="نسخ الوحدة"><Copy size={15} /></button><button type="button" onClick={() => deleteBlock(block.id)} aria-label="حذف الوحدة"><Trash2 size={16} /></button></div></article>)}</div></div><aside className="cms-inspector"><div className="cms-panel-title"><div><span>خصائص الصفحة</span><h3>ملخص التنفيذ</h3></div><SlidersHorizontal size={17} /></div><dl><div><dt>الحالة</dt><dd className={pageStatusClass(selectedPage.status)}>{selectedPage.status}</dd></div><div><dt>آخر تحديث</dt><dd>{selectedPage.updatedAt}</dd></div><div><dt>عدد الوحدات</dt><dd>{selectedPage.blocks.length}</dd></div></dl><div className="cms-inspector-note"><History size={16} /><p>تُحفظ كل عملية في سجل محلي يمكن استعادة نسخة سابقة منه.</p></div></aside></section>}
+    {view === "posts" && <section className="cms-content"><div className="cms-section-heading"><div><span>إدارة المنشورات</span><h2>المحتوى التحريري</h2></div><button className="cms-primary" type="button" onClick={addPost}><FilePlus2 size={16} />منشور جديد</button></div><div className="cms-post-table"><div className="cms-table-head"><span>العنوان</span><span>الحالة</span><span>آخر تحديث</span><span>الإجراءات</span></div>{data.posts.filter((post) => post.status !== "محذوفة").map((post) => <article key={post.id}><div><b>{post.title}</b><p>{post.excerpt}</p></div><i className={pageStatusClass(post.status)}>{post.status}</i><time>{post.updatedAt}</time><span className="cms-mini-actions"><button type="button" onClick={() => changePost(post.id, post.status === "منشورة" ? "مسودة" : "منشورة")}>{post.status === "منشورة" ? "إخفاء" : "نشر"}</button><button type="button" onClick={() => changePost(post.id, "محذوفة")}><Trash2 size={15} /></button></span></article>)}</div></section>}
+    {view === "templates" && <section className="cms-content"><div className="cms-section-heading"><div><span>وحدات قابلة لإعادة الاستخدام</span><h2>مكتبة القوالب</h2></div><div className="cms-add-block"><select value={blockType} onChange={(e) => setBlockType(e.target.value as BlockType)}>{Object.entries(blockLabels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select><button className="cms-primary" type="button" onClick={addTemplate}><Plus size={16} />قالب مخصص</button></div></div><div className="cms-template-grid">{data.templates.map((template) => <article key={template.id}><span className="cms-template-icon"><LayoutTemplate size={19} /></span><h3>{template.name}</h3><p>{template.description}</p><div>{template.fields.map((field) => <small key={field}>{field}</small>)}</div><button type="button" onClick={() => { setBlockType(template.type); choose("pages"); setNotice(`قالب «${template.name}» جاهز لإضافته إلى الصفحة.`); }}>استخدم القالب <ChevronLeft size={15} /></button></article>)}</div></section>}
+    {view === "history" && <section className="cms-content cms-history"><div className="cms-section-heading"><div><span>حماية التغييرات</span><h2>سجل النسخ المحفوظة</h2></div><button className="cms-ghost" type="button" onClick={resetWorkspace}><RotateCcw size={15} />استعادة النموذج الافتراضي</button></div><p className="cms-intro">تُحفظ آخر 15 نسخة محلية تلقائيًا عند إجراء تعديل على المحتوى. اختر النسخة المطلوبة ثم استعدها إلى مساحة العمل الحالية.</p><div className="cms-history-list">{history.length === 0 ? <div className="cms-empty"><History size={24} /><b>لا توجد نسخ محفوظة بعد</b><span>ابدأ تحرير المحتوى ليُنشأ سجل الاستعادة تلقائيًا.</span></div> : history.map((snapshot) => <article key={snapshot.id}><span className="cms-file-icon"><History size={17} /></span><div><b>{snapshot.reason}</b><p>{snapshot.savedAt} — {snapshot.data.pages.length} صفحات و{snapshot.data.templates.length} قوالب.</p></div><button className="cms-ghost" type="button" onClick={() => restore(snapshot.id)}><ArchiveRestore size={15} />استعادة</button></article>)}</div></section>}
+    {view === "settings" && <section className="cms-content cms-settings"><div className="cms-section-heading"><div><span>قابلية الربط</span><h2>تكامل PHP وMySQL</h2></div></div><div className="cms-integration-card"><div><span className="cms-file-icon"><PanelRightClose size={18} /></span><h3>طبقة بيانات قابلة للتبديل</h3><p>تعمل لوحة الإدارة الآن بالتخزين المحلي للتجربة. عند تفعيل <code>VITE_CMS_API_BASE_URL</code> تتصل طبقة العميل بخدمة PHP/MySQL وفق عقد JSON المرفق.</p></div><span className="cms-ready-badge"><CheckCircle2 size={15} />جاهز للربط</span></div><div className="cms-endpoints"><h3>عقد الواجهة المقترح</h3><article><b>GET <code>/health</code></b><span>فحص جاهزية خدمة المحتوى.</span></article><article><b>GET <code>/content</code></b><span>قراءة الصفحات والمنشورات والقوالب.</span></article><article><b>PUT <code>/content</code></b><span>حفظ بنية المحتوى الكاملة.</span></article></div></section>}
+  </main></div>;
 }
