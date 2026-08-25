@@ -1,0 +1,53 @@
+name: Deploy BTUC CMS Prototype
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "btuc-cms-prototype/**"
+      - ".github/workflows/deploy-cms-prototype.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: btuc-cms-prototype/pnpm-lock.yaml
+      - name: Install dependencies
+        working-directory: btuc-cms-prototype
+        run: pnpm install --frozen-lockfile
+      - name: Build prototype
+        working-directory: btuc-cms-prototype
+        run: pnpm exec vite build
+      - name: Add SPA fallback
+        run: cp btuc-cms-prototype/dist/public/index.html btuc-cms-prototype/dist/public/404.html
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: btuc-cms-prototype/dist/public
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

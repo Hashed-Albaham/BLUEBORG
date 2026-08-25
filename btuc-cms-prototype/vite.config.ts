@@ -5,6 +5,7 @@ import { defineConfig } from "vite";
 
 // بناء قياسي يعتمد React وVite وTailwind فقط؛ لا يضيف تحليلات أو وسائط خارجية إلى صفحة الشركة.
 export default defineConfig({
+  base: process.env.GITHUB_ACTIONS ? "/BLUEBORG/" : "/",
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
