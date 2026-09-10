@@ -1,0 +1,49 @@
+services:
+  cms:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOST: 0.0.0.0
+    ports:
+      - "${CMS_PORT:-3000}:3000"
+    restart: unless-stopped
+
+  php-api:
+    build:
+      context: .
+      dockerfile: docker/php-api/Dockerfile
+    environment:
+      DB_HOST: mysql
+      DB_NAME: ${MYSQL_DATABASE:-btuc_cms}
+      DB_USER: ${MYSQL_USER:-btuc}
+      DB_PASSWORD: ${MYSQL_PASSWORD:-change-me}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+    ports:
+      - "${PHP_API_PORT:-8080}:80"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: unless-stopped
+
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-btuc_cms}
+      MYSQL_USER: ${MYSQL_USER:-btuc}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-change-me}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-change-me-root}
+    volumes:
+      - btuc_mysql_data:/var/lib/mysql
+      - ./btuc-cms-prototype/php-api/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+volumes:
+  btuc_mysql_data:

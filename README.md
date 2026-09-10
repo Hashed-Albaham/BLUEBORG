@@ -39,6 +39,29 @@ pnpm dev
 
 يدعم المستودع الآن Railpack أيضًا من الجذر؛ إذا اخترت **Railpack** بدل Dockerfile، اضبط **Base Directory = `/`**، واترك أوامر Install وBuild وStart على الاكتشاف التلقائي، أو استخدم `pnpm install --frozen-lockfile` و`pnpm build` و`pnpm start` على التوالي، مع Port = `3000`. ملف `package.json` الجذري يمرر الأوامر إلى `btuc-cms-prototype`، و`railpack.json` يثبت Node 22 وأمر التشغيل. خيار Dockerfile يبقى الأنسب إذا أردت بناءً أكثر حتمية.
 
+## Docker Compose الكامل
+
+يحتوي المستودع أيضًا على `docker-compose.yml` لتشغيل واجهة CMS وخدمة PHP API المرجعية وقاعدة MySQL معًا. انسخ `.env.example` إلى `.env`، وغيّر كلمات المرور قبل أي تشغيل خارج جهازك، ثم نفّذ:
+
+```bash
+cp .env.example .env
+docker compose up --build -d
+```
+
+بعد التشغيل تكون واجهة CMS على `http://localhost:3000`، ولوحة الإدارة على `http://localhost:3000/admin`، وPHP API على `http://localhost:8080/health`. يحفظ MySQL بياناته في volume باسم `btuc_mysql_data`. لا ترفع ملف `.env` إلى GitHub، ولا تستخدم كلمات المرور الافتراضية في بيئة عامة.
+
+لإيقاف الخدمات مع إبقاء البيانات:
+
+```bash
+docker compose down
+```
+
+ولحذف volume البيانات في بيئة تجريبية فقط:
+
+```bash
+docker compose down -v
+```
+
 ## فحص ما قبل النشر
 
 نفّذ الأوامر التالية داخل أي مجلد مشروع قبل النشر:
