@@ -225,3 +225,11 @@
 نجحت الأوامر `pnpm test` (خمسة اختبارات)، و`pnpm check`، و`pnpm build` في مساحة النموذج الأصلية ثم في النسخة المنسوخة إلى المستودع. دُفع المصدر النهائي إلى فرع `main` في مستودع BLUEBORG ضمن الالتزام `021fa3d`.
 
 تم تشغيل سير عمل Pages بعد الدفع، ووصلت عملية البناء إلى خطوة `actions/configure-pages@v5`، لكنها توقفت لأن التكامل لا يملك صلاحية إنشاء موقع Pages في المستودع. يلزم تفعيل Pages مرة واحدة من إعدادات المستودع؛ لا يتطلب ذلك نطاقًا مخصصًا.
+
+## إعادة اختبار GitHub Pages بعد إصلاح pnpm
+
+أزيلت النسخة الصريحة `version: 10` من `pnpm/action-setup@v4` حتى يقرأ الإجراء نسخة pnpm المعلنة في `package.json`. دُفع الإصلاح ضمن الالتزام `a6779a0`، ثم نجح Workflow رقم `34490463571` بالكامل؛ نجحت الاختبارات وفحص الأنواع وبناء artifact ورفع Pages ونشره، وأعاد GitHub رابط `https://hashed-albaham.github.io/BLUEBORG/`.
+
+## القيد المتبقي في إعداد Pages
+
+عند الفحص الحي بعد نجاح Workflow، ظل الرابط يعرض صفحة README مبنية عبر Jekyll، وليس artifact CMS. كما أعاد GitHub API أن إنشاء/تعديل إعداد Pages غير متاح للتكامل الحالي (`403 Resource not accessible by integration`). لذلك يلزم على مالك المستودع فتح `Settings → Pages` واختيار **Source: GitHub Actions** ثم حفظ الإعداد مرة واحدة. لا يحتاج هذا الإجراء إلى نطاق مخصص. بعد الحفظ، أعد تشغيل Workflow `deploy-cms-prototype.yml` أو ادفع commit جديد، ثم تحقق من الرابط نفسه.

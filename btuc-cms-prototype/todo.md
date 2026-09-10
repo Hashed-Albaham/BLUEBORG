@@ -66,3 +66,8 @@
 - [x] إصلاح base path وworkflow وملفات fallback المطلوبة لصفحة ثابتة متعددة المسارات.
 - [x] بناء نسخة Pages وفحص مسارات CSS وJavaScript والصور قبل دفع الإصلاح.
 - [ ] تشغيل GitHub Actions والتحقق من الرابط المنشور بعد الإصلاح.
+
+- [x] إزالة تعارض نسخة pnpm من Workflow الخاص بـ GitHub Pages ودفع الإصلاح ضمن الالتزام a6779a0.
+- [x] تشغيل Workflow الجديد والتحقق من نجاح الاختبارات والبناء ورفع artifact والنشر.
+- [ ] تفعيل مصدر GitHub Pages على GitHub Actions من Settings → Pages بصلاحية مالك المستودع ثم إعادة فحص الرابط الحي.
+- [ ] تنفيذ redeploy على Coolify من آخر commit وفحص Runtime Logs بعد التفعيل.
