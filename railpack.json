@@ -1,0 +1,14 @@
+{
+  "$schema": "https://schema.railpack.com",
+  "provider": "node",
+  "packages": {
+    "node": "22"
+  },
+  "deploy": {
+    "startCommand": "pnpm start",
+    "variables": {
+      "NODE_ENV": "production",
+      "HOST": "0.0.0.0"
+    }
+  }
+}

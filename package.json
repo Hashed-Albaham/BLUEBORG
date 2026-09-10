@@ -1,0 +1,15 @@
+{
+  "name": "blueborg-deploy",
+  "private": true,
+  "version": "1.0.0",
+  "packageManager": "pnpm@10.4.1",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "install:cms": "pnpm --dir btuc-cms-prototype install --frozen-lockfile",
+    "build": "pnpm run install:cms && pnpm --dir btuc-cms-prototype build",
+    "start": "pnpm --dir btuc-cms-prototype start",
+    "dev": "pnpm --dir btuc-cms-prototype dev"
+  }
+}
