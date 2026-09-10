@@ -37,7 +37,7 @@ pnpm dev
 
 في Coolify، اربط المستودع `Hashed-Albaham/BLUEBORG` بالفرع `main`، واترك **Build Pack = Dockerfile** و**Dockerfile Location = `/Dockerfile`** و**Build Context = `/`**. لا تضبط Root Directory على `btuc-cms-prototype` عند استخدام Dockerfile الجذري؛ فالـ Dockerfile يحتاج مجلدي المشروعين داخل سياق البناء. اترك حقل المنفذ على `3000` أو استخدم منفذ التطبيق الذي تعرضه Coolify، لأن الخادم يدعم `PORT` ديناميكيًا. أمر التشغيل مضمّن داخل Dockerfile ولا تحتاج إلى `start.sh`.
 
-في حال اختيار Railpack بدل Dockerfile، اضبط Root Directory على `/btuc-cms-prototype`، وBuild Command على `pnpm install --frozen-lockfile && pnpm build`، وStart Command على `pnpm start`، وPort على `3000`. لكن خيار Dockerfile الجذري هو الأنسب لهذا المستودع متعدد المشاريع.
+يدعم المستودع الآن Railpack أيضًا من الجذر؛ إذا اخترت **Railpack** بدل Dockerfile، اضبط **Base Directory = `/`**، واترك أوامر Install وBuild وStart على الاكتشاف التلقائي، أو استخدم `pnpm install --frozen-lockfile` و`pnpm build` و`pnpm start` على التوالي، مع Port = `3000`. ملف `package.json` الجذري يمرر الأوامر إلى `btuc-cms-prototype`، و`railpack.json` يثبت Node 22 وأمر التشغيل. خيار Dockerfile يبقى الأنسب إذا أردت بناءً أكثر حتمية.
 
 ## فحص ما قبل النشر
 
