@@ -31,6 +31,14 @@ pnpm dev
 
 بعدها افتح `http://localhost:3000/admin`. تسمح لوحة الإدارة بإضافة الصفحات والمنشورات، واختيار القوالب، وإضافة الوحدات وتعديلها وترتيبها. في وضع التجربة تحفظ البيانات محليًا في المتصفح؛ ويوفّر مجلد `btuc-cms-prototype/php-api` مخطط MySQL وخدمة PHP مرجعية للربط اللاحق.
 
+## النشر على Coolify / Koyeb
+
+المستودع يحتوي مشروعين، لذلك لا يكفي أن يقرأ النظام `package.json` من الجذر. أضيف `Dockerfile` في جذر المستودع ليبني ويشغّل `btuc-cms-prototype` تلقائيًا، ويقرأ التطبيق المنفذ من `PORT` الذي توفره منصة الاستضافة.
+
+في Coolify، اربط المستودع `Hashed-Albaham/BLUEBORG` بالفرع `main`، واترك **Build Pack = Dockerfile** و**Dockerfile Location = `/Dockerfile`** و**Build Context = `/`**. لا تضبط Root Directory على `btuc-cms-prototype` عند استخدام Dockerfile الجذري؛ فالـ Dockerfile يحتاج مجلدي المشروعين داخل سياق البناء. اترك حقل المنفذ على `3000` أو استخدم منفذ التطبيق الذي تعرضه Coolify، لأن الخادم يدعم `PORT` ديناميكيًا. أمر التشغيل مضمّن داخل Dockerfile ولا تحتاج إلى `start.sh`.
+
+في حال اختيار Railpack بدل Dockerfile، اضبط Root Directory على `/btuc-cms-prototype`، وBuild Command على `pnpm install --frozen-lockfile && pnpm build`، وStart Command على `pnpm start`، وPort على `3000`. لكن خيار Dockerfile الجذري هو الأنسب لهذا المستودع متعدد المشاريع.
+
 ## فحص ما قبل النشر
 
 نفّذ الأوامر التالية داخل أي مجلد مشروع قبل النشر:
