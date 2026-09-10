@@ -73,3 +73,9 @@ pnpm start
 ```
 
 > لا تُنشر ملفات `config.php` أو ملفات `.env` التي تحتوي على بيانات اتصال فعلية. استخدم ملفات الأمثلة المرفقة فقط، ثم أضف البيانات السرية إلى بيئة الاستضافة.
+
+## GitHub Pages
+
+ينشر Workflow الموقع التجريبي من `btuc-cms-prototype/dist/public` تحت المسار `/BLUEBORG/`. بعد أول رفع، افتح إعدادات المستودع ثم **Settings → Pages → Build and deployment → Source** واختر **GitHub Actions**، وليس **Deploy from a branch**؛ اختيار الفرع يجعل GitHub يعرض `README.md` في جذر المستودع بدل artifact التطبيق. بعد اختيار GitHub Actions شغّل Workflow `Deploy BTUC CMS to GitHub Pages` يدويًا مرة واحدة من تبويب Actions إذا لم يبدأ تلقائيًا.
+
+الرابط المتوقع هو `https://hashed-albaham.github.io/BLUEBORG/`. يدعم التطبيق أيضًا المسارات `https://hashed-albaham.github.io/BLUEBORG/admin` و`https://hashed-albaham.github.io/BLUEBORG/preview/home` باستخدام fallback إلى `404.html`، مع base path مضبوط على `/BLUEBORG/` أثناء بناء Pages.

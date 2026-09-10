@@ -1,4 +1,4 @@
-name: Deploy BTUC CMS Prototype
+name: Deploy BTUC CMS to GitHub Pages
 
 on:
   push:
@@ -14,8 +14,8 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "pages"
-  cancel-in-progress: false
+  group: github-pages
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -33,15 +33,20 @@ jobs:
       - name: Install dependencies
         working-directory: btuc-cms-prototype
         run: pnpm install --frozen-lockfile
-      - name: Build prototype
+      - name: Run tests and typecheck
         working-directory: btuc-cms-prototype
-        run: pnpm exec vite build
+        run: pnpm test && pnpm check
+      - name: Build GitHub Pages site
+        working-directory: btuc-cms-prototype
+        env:
+          VITE_BASE_PATH: /BLUEBORG/
+        run: pnpm build:client
       - name: Add SPA fallback
         run: cp btuc-cms-prototype/dist/public/index.html btuc-cms-prototype/dist/public/404.html
-      - uses: actions/configure-pages@v5
-        with:
-          enablement: true
-      - uses: actions/upload-pages-artifact@v3
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
         with:
           path: btuc-cms-prototype/dist/public
   deploy:
@@ -51,5 +56,6 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - id: deployment
+      - name: Deploy to GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v4
